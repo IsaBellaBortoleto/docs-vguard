@@ -1,0 +1,23 @@
+PENDÊNCIAS - ENTREGA DE 04/11
+
+SOFTWARE
+[ ] Texto do relatório explicando os statecharts
+[ ] Colocar a pasta docs/ (diagramas) em um repositório
+
+HARDWARE
+[ ] Decidir: OBD com TJA1050 ou MCP2515
+[ ] Decidir: módulo 4G A7670E ou SIM7670G
+[ ] Decidir: GNSS separado ou o do módulo 4G
+[ ] Decidir: modelo da IMU
+[ ] Esquemático completo (alimentação, GNSS, 4G e câmera)
+[ ] Conta de consumo da alimentação
+[ ] Ensaio H01: UART5 da Pi em laço (falta o script)
+[ ] Ensaio H02: desempenho da visão na Pi
+[ ] Ensaio H03: corte de energia na Pi
+[ ] Registrar os ensaios já feitos: Pi com webcam (Pedro) e OBD do Voyage (Nicolas)
+
+PRONTO
+[x] Statecharts 01 a 04 e diagramas de hardware 05 a 07
+    (o 02 já avisa que o OBD ainda está sendo programado no firmware)
+[x] Commits de integracao, backend e dashboard
+[x] Plano de testes e modelo de registro de ensaio

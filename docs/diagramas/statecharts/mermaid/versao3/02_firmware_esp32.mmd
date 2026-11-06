@@ -1,0 +1,88 @@
+---
+title: Leitura dos dados do carro (ESP32)
+config:
+  state:
+    wrappingWidth: 600
+    nodeSpacing: 25
+    rankSpacing: 30
+  flowchart:
+    curve: linear
+    wrappingWidth: 600
+  theme: base
+  themeVariables:
+    fontFamily: "Segoe UI"
+    fontSize: 14px
+    primaryColor: "#8ECAE6"
+    stateBkg: "#8ECAE6"
+    primaryBorderColor: "#023047"
+    primaryTextColor: "#1F1F1F"
+    stateLabelColor: "#1F1F1F"
+    textColor: "#4D4D4D"
+    titleColor: "#1F1F1F"
+    lineColor: "#023047"
+    transitionColor: "#023047"
+    transitionLabelColor: "#4D4D4D"
+    edgeLabelBackground: "#FFFFFF"
+    compositeBackground: "#FFFFFF"
+    compositeTitleBackground: "#219EBC"
+    compositeBorder: "#023047"
+    altBackground: "#FFFFFF"
+    specialStateColor: "#FB8500"
+    innerEndBackground: "#FB8500"
+    noteBkgColor: "#FFFFFF"
+    noteBorderColor: "#FFB703"
+    noteTextColor: "#4D4D4D"
+---
+stateDiagram-v2
+    state "Ligando" as LIGANDO
+    LIGANDO : primeiro garante que não vai enviar nada ao carro
+    state "Funcionando" as FUNCIONANDO
+
+    [*] --> LIGANDO
+    LIGANDO --> FUNCIONANDO : pronto
+    FUNCIONANDO --> LIGANDO : travou (reinicia sozinho)
+
+    state FUNCIONANDO {
+        state "Conversa com a Raspberry Pi" as PI
+        state PI {
+            state "Esperando a Raspberry Pi" as SEM_PI
+            SEM_PI : descarta o que lê
+            state "Raspberry Pi conectada" as COM_PI
+            COM_PI : envia as leituras
+            [*] --> SEM_PI
+            SEM_PI --> COM_PI : a Raspberry Pi chamou
+            COM_PI --> SEM_PI : 3 segundos sem notícias
+        }
+        --
+        state "Dados do motor (OBD-II)" as OBD
+        state OBD {
+            state "Aguardando a Raspberry Pi" as AGUARDA
+            AGUARDA : não fala com o carro
+            state "Conversando com o carro" as ATIVO
+            ATIVO : escuta, lê e trata falhas (diagrama 2b)
+            state "Bloqueado" as BLOQUEADO
+            BLOQUEADO : não fala mais com o carro até ser religado
+            [*] --> AGUARDA
+            AGUARDA --> ATIVO : a Raspberry Pi está conectada
+            ATIVO --> AGUARDA : a Raspberry Pi sumiu por 3 segundos
+            ATIVO --> BLOQUEADO : 3ª falha na rede, ou tentou enviar algo proibido
+        }
+        --
+        state "Sensor de movimento (IMU)" as IMU
+        state IMU {
+            state "Medindo" as MEDINDO
+            MEDINDO : freadas, curvas e batidas, 100 vezes por segundo
+            state "Com defeito" as DEFEITO
+            DEFEITO : tenta religar o sensor a cada segundo
+            [*] --> MEDINDO
+            MEDINDO --> DEFEITO : o sensor parou de responder
+            DEFEITO --> MEDINDO : o sensor voltou
+        }
+    }
+
+    note right of FUNCIONANDO
+        As três partes funcionam ao mesmo tempo e de forma independente:
+        um defeito no sensor de movimento não interrompe a leitura do motor.
+        O ESP32 só pergunta ao carro; nunca envia comandos para ele.
+        O detalhe de "Conversando com o carro" está no diagrama 2b.
+    end note

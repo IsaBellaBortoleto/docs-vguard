@@ -1,0 +1,17 @@
+stateDiagram-v2
+    state "Vida de um evento" as TUDO
+    state TUDO {
+        state "Salvo no cartão com foto e dados do carro" as SALVO
+        state "Completando o registro" as COMPLETANDO
+        state "Esperando para enviar" as ESPERANDO
+        state "Dados enviados, foto por último (se falhar, tenta depois)" as PARCIAL
+        state "Tudo enviado" as ENVIADO
+        state "Apagado do cartão" as APAGADO
+        [*] --> SALVO : sono ou distração detectados
+        SALVO --> COMPLETANDO : guarda os 10 s seguintes
+        COMPLETANDO --> ESPERANDO : passaram 10 s
+        ESPERANDO --> ESPERANDO : o envio falhou, tenta depois
+        ESPERANDO --> PARCIAL : enviado pelo 4G ou Wi-Fi
+        PARCIAL --> ENVIADO : foto enviada
+        ENVIADO --> APAGADO : o cartão está ficando cheio
+    }

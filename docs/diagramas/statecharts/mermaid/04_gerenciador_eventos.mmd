@@ -1,0 +1,60 @@
+---
+title: Registro e envio de um evento
+config:
+  state:
+    wrappingWidth: 600
+    nodeSpacing: 25
+    rankSpacing: 30
+  flowchart:
+    curve: linear
+    wrappingWidth: 600
+  theme: base
+  themeVariables:
+    fontFamily: "Segoe UI"
+    fontSize: 14px
+    primaryColor: "#EDE7F6"
+    primaryBorderColor: "#7E57C2"
+    primaryTextColor: "#311B92"
+    lineColor: "#5E548E"
+    textColor: "#3D3558"
+    titleColor: "#4527A0"
+    noteBkgColor: "#FFFFFF"
+    noteBorderColor: "#B39DDB"
+    noteTextColor: "#4A4458"
+    compositeBackground: "#F8F5FC"
+    compositeTitleBackground: "#F1EBFA"
+    compositeBorder: "#B39DDB"
+    specialStateColor: "#4527A0"
+    innerEndBackground: "#4527A0"
+    transitionColor: "#5E548E"
+    transitionLabelColor: "#3D3558"
+    stateLabelColor: "#311B92"
+    stateBkg: "#EDE7F6"
+    edgeLabelBackground: "#FFFFFF"
+---
+stateDiagram-v2
+    state "Vida de um evento" as TUDO
+    state TUDO {
+        state "Salvo no cartão" as SALVO
+        SALVO : foto e dados do carro no instante do evento
+        state "Completando o registro" as COMPLETANDO
+        COMPLETANDO : guarda também os 10 segundos seguintes
+        state "Esperando para enviar" as ESPERANDO
+        state "Dados enviados" as PARCIAL
+        PARCIAL : a foto vai por último e, se falhar, tenta depois
+        state "Tudo enviado" as ENVIADO
+        state "Apagado do cartão" as APAGADO
+        [*] --> SALVO : sono ou distração detectados
+        SALVO --> COMPLETANDO
+        COMPLETANDO --> ESPERANDO : passaram 10 segundos
+        ESPERANDO --> ESPERANDO : falhou, tenta depois
+        ESPERANDO --> PARCIAL : enviado pelo 4G ou Wi-Fi
+        PARCIAL --> ENVIADO : foto enviada
+        ENVIADO --> APAGADO : o cartão está ficando cheio
+    }
+
+    note right of TUDO
+        A conexão (sem internet, 4G ou Wi-Fi) segue o diagrama 1; o 4G e o Wi-Fi enviam tudo, inclusive a foto.
+        Um envio só conta quando o servidor confirma; nada é apagado antes disso.
+        Se faltar energia, o evento continua de onde parou.
+    end note

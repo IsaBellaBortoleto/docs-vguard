@@ -1,0 +1,75 @@
+---
+title: Monitoramento do motorista (câmera)
+config:
+  state:
+    wrappingWidth: 600
+    nodeSpacing: 25
+    rankSpacing: 30
+  flowchart:
+    curve: step
+    wrappingWidth: 600
+  theme: base
+  themeVariables:
+    fontFamily: "Segoe UI"
+    fontSize: 14px
+    primaryColor: "#EDE7F6"
+    primaryBorderColor: "#7E57C2"
+    primaryTextColor: "#311B92"
+    lineColor: "#5E548E"
+    textColor: "#3D3558"
+    titleColor: "#4527A0"
+    noteBkgColor: "#FFFFFF"
+    noteBorderColor: "#B39DDB"
+    noteTextColor: "#4A4458"
+    compositeBackground: "#F8F5FC"
+    compositeTitleBackground: "#F1EBFA"
+    compositeBorder: "#B39DDB"
+    specialStateColor: "#4527A0"
+    innerEndBackground: "#4527A0"
+    transitionColor: "#5E548E"
+    transitionLabelColor: "#3D3558"
+    stateLabelColor: "#311B92"
+    stateBkg: "#EDE7F6"
+    edgeLabelBackground: "#FFFFFF"
+---
+stateDiagram-v2
+    state "Rosto fora da imagem" as SEM_ROSTO
+    state "Observando o rosto" as OBSERVANDO
+
+    [*] --> SEM_ROSTO
+    SEM_ROSTO --> OBSERVANDO : rosto encontrado
+    OBSERVANDO --> SEM_ROSTO : rosto sumiu da imagem
+
+    state OBSERVANDO {
+        state "Atento" as ATENTO
+        state "Olhos fechados ou bocejo" as OLHOS
+        state "Cabeça virada" as CABECA
+
+        [*] --> ATENTO
+        ATENTO --> OLHOS : fechou os olhos ou bocejou
+        OLHOS --> ATENTO : abriu os olhos
+        ATENTO --> CABECA : virou a cabeça
+        CABECA --> ATENTO : olhou para a frente
+
+        state OLHOS {
+            state "Contando o tempo" as CONTA_SONO
+            state "Sonolento" as SONO
+            SONO : registra um evento de fadiga com foto
+            [*] --> CONTA_SONO
+            CONTA_SONO --> SONO : 1 s de olhos fechados ou 1,5 s de bocejo
+        }
+
+        state CABECA {
+            state "Contando o tempo" as CONTA_DISTRACAO
+            state "Distraído" as DISTRAIDO
+            DISTRAIDO : registra um evento de distração com foto
+            [*] --> CONTA_DISTRACAO
+            CONTA_DISTRACAO --> DISTRAIDO : mais de 2 s
+        }
+    }
+
+    note right of OBSERVANDO
+        Piscadas e interrupções muito curtas (menos de 0,15 s) não zeram a contagem.
+        Cada tipo de evento é registrado no máximo uma vez a cada 5 segundos.
+        Tempos iniciais, a ajustar nos testes.
+    end note

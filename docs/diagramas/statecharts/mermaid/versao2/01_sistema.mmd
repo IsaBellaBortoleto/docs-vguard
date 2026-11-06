@@ -1,0 +1,94 @@
+---
+title: Visão geral do V-GUARD
+config:
+  state:
+    wrappingWidth: 600
+    nodeSpacing: 25
+    rankSpacing: 30
+  flowchart:
+    curve: step
+    wrappingWidth: 600
+  look: neo
+  theme: base
+  themeVariables:
+    fontFamily: "Segoe UI"
+    fontSize: 14px
+    primaryColor: "#E9C46A"
+    stateBkg: "#E9C46A"
+    primaryBorderColor: "#264653"
+    primaryTextColor: "#1F1F1F"
+    stateLabelColor: "#1F1F1F"
+    textColor: "#4D4D4D"
+    titleColor: "#1F1F1F"
+    lineColor: "#264653"
+    transitionColor: "#264653"
+    transitionLabelColor: "#4D4D4D"
+    edgeLabelBackground: "#FFFFFF"
+    compositeBackground: "#FFFFFF"
+    compositeTitleBackground: "#2A9D8F"
+    compositeBorder: "#264653"
+    altBackground: "#FFFFFF"
+    mainBkg: "#9FD4CD"
+    useGradient: false
+    specialStateColor: "#E76F51"
+    innerEndBackground: "#E76F51"
+    noteBkgColor: "#FFFFFF"
+    noteBorderColor: "#F4A261"
+    noteTextColor: "#4D4D4D"
+---
+stateDiagram-v2
+    state "Desligado" as DESLIGADO
+    state "Ligado" as LIGADO
+
+    [*] --> DESLIGADO
+    DESLIGADO --> LIGADO : o motorista liga o carro
+    LIGADO --> DESLIGADO : carro desligado ou falta energia
+
+    state LIGADO {
+        state "Preparando" as PREPARANDO
+        PREPARANDO : recupera o que já estava salvo no cartão
+        state "Funcionando" as FUNCIONANDO
+        [*] --> PREPARANDO
+        PREPARANDO --> FUNCIONANDO : pronto
+
+        state FUNCIONANDO {
+            state "Dados do carro" as CARRO
+            state CARRO {
+                state "Lendo os dados do carro" as LENDO
+                LENDO : velocidade, rotação, posição e movimento
+                state "Sem dados do carro" as SEM_DADOS
+                [*] --> LENDO
+                LENDO --> SEM_DADOS : o carro parou de responder
+                SEM_DADOS --> LENDO : o carro voltou a responder
+            }
+            --
+            state "Motorista" as MOTORISTA
+            state MOTORISTA {
+                state "Observando o motorista" as OBSERVANDO
+                [*] --> OBSERVANDO
+                OBSERVANDO --> OBSERVANDO : sono ou distração / registra com foto
+            }
+            --
+            state "Envio dos dados" as ENVIO
+            state ENVIO {
+                state "Sem internet" as OFFLINE
+                OFFLINE : guarda tudo no cartão
+                state "Enviando pelo 4G" as G4
+                G4 : envia os dados, mas não as fotos
+                state "Enviando pelo Wi-Fi" as WIFI
+                WIFI : envia tudo, inclusive as fotos
+                [*] --> OFFLINE
+                OFFLINE --> G4 : sinal de celular
+                OFFLINE --> WIFI : Wi-Fi conhecido
+                G4 --> WIFI : Wi-Fi conhecido (tem preferência)
+                WIFI --> G4 : Wi-Fi caiu
+                G4 --> OFFLINE : sinal caiu
+                WIFI --> OFFLINE : sem Wi-Fi e sem sinal
+            }
+        }
+    }
+
+    note right of LIGADO
+        As três partes de "Funcionando" acontecem ao mesmo tempo.
+        Se faltar energia, nada do que já foi salvo no cartão se perde.
+    end note

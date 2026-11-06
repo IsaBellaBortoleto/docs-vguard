@@ -1,0 +1,80 @@
+@startuml 04_gerenciador_eventos
+skinparam defaultFontName "Segoe UI"
+skinparam shadowing false
+skinparam linetype polyline
+skinparam nodesep 70
+skinparam ranksep 70
+skinparam roundCorner 12
+skinparam ArrowColor #5E548E
+skinparam ArrowThickness 1.3
+skinparam ArrowFontColor #3D3558
+skinparam ArrowFontSize 12
+skinparam TitleFontColor #4527A0
+skinparam state {
+  BackgroundColor #EDE7F6
+  BorderColor #7E57C2
+  BorderThickness 1.3
+  FontColor #311B92
+  FontSize 13
+  FontStyle bold
+  AttributeFontColor #4A4458
+  AttributeFontSize 12
+  StartColor #4527A0
+  EndColor #4527A0
+}
+skinparam state<<grupo>> {
+  BackgroundColor #F8F5FC
+  BorderColor #B39DDB
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #B39DDB
+  FontColor #4A4458
+}
+hide empty description
+
+title <size:22><b>Registro e envio de um evento</b></size>\n<size:13><color:#7A6F99>Do cartão SD ao servidor</color></size>
+
+state "Registro e envio" as TUDO <<grupo>> {
+
+  state "Conexão com a internet" as CONEXAO <<grupo>> {
+    state "Sem internet" as OFFLINE
+    state "4G" as G4
+    state "Wi-Fi" as WIFI
+    [*] --> OFFLINE
+    OFFLINE -down-> G4 : sinal de celular
+    OFFLINE -down-> WIFI : Wi-Fi conhecido
+    G4 -right-> WIFI : Wi-Fi conhecido\n(tem preferência)
+    WIFI -left-> G4 : Wi-Fi caiu
+    G4 -up-> OFFLINE : sinal caiu
+    WIFI -up-> OFFLINE : sem Wi-Fi\ne sem sinal
+  }
+
+  ||
+
+  state "Vida de um evento" as EVENTO <<grupo>> {
+    state "Salvo no cartão" as SALVO : foto e dados do carro\nno instante do evento
+    state "Completando o registro" as COMPLETANDO : guarda também os\n10 segundos seguintes
+    state "Esperando para enviar" as ESPERANDO
+    state "Dados enviados" as PARCIAL : a foto vai por último e,\nse falhar, tenta depois
+    state "Tudo enviado" as ENVIADO
+    state "Apagado do cartão" as APAGADO
+
+    [*] --> SALVO : sono ou distração\ndetectados
+    SALVO -down-> COMPLETANDO
+    COMPLETANDO -down-> ESPERANDO : passaram\n10 segundos
+    ESPERANDO --> ESPERANDO : o envio falhou\n(tenta de novo depois)
+    ESPERANDO -down-> PARCIAL : enviado pelo\n4G ou Wi-Fi
+    PARCIAL -down-> ENVIADO : foto enviada
+    ENVIADO -down-> APAGADO : o cartão está\nficando cheio
+  }
+}
+
+note bottom of TUDO
+  As duas partes acontecem ao mesmo tempo: a conexão muda durante a viagem,
+  e o evento avança sempre que há uma conexão disponível. O 4G e o Wi-Fi enviam tudo, inclusive a foto.
+  Um envio só conta quando o servidor confirma que recebeu; nada é apagado antes disso.
+  Se faltar energia, o evento continua de onde parou.
+end note
+
+@enduml

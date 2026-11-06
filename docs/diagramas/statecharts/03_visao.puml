@@ -1,0 +1,73 @@
+@startuml 03_visao
+skinparam defaultFontName "Segoe UI"
+skinparam shadowing false
+skinparam linetype polyline
+skinparam nodesep 70
+skinparam ranksep 70
+skinparam roundCorner 12
+skinparam ArrowColor #5E548E
+skinparam ArrowThickness 1.3
+skinparam ArrowFontColor #3D3558
+skinparam ArrowFontSize 12
+skinparam TitleFontColor #4527A0
+skinparam state {
+  BackgroundColor #EDE7F6
+  BorderColor #7E57C2
+  BorderThickness 1.3
+  FontColor #311B92
+  FontSize 13
+  FontStyle bold
+  AttributeFontColor #4A4458
+  AttributeFontSize 12
+  StartColor #4527A0
+  EndColor #4527A0
+}
+skinparam state<<grupo>> {
+  BackgroundColor #F8F5FC
+  BorderColor #B39DDB
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #B39DDB
+  FontColor #4A4458
+}
+hide empty description
+
+title <size:22><b>Monitoramento do motorista</b></size>\n<size:13><color:#7A6F99>Câmera: sinais de sono e de distração</color></size>
+
+state "Rosto fora da imagem" as SEM_ROSTO
+state "Observando o rosto" as OBSERVANDO <<grupo>> {
+  state "Atento" as ATENTO
+
+  state "Olhos fechados ou bocejo" as OLHOS <<grupo>> {
+    state "Contando o tempo" as CONTA_SONO
+    state "Sonolento" as SONO : registra um evento\nde fadiga com foto
+    [*] --> CONTA_SONO
+    CONTA_SONO -down-> SONO : 1 s de olhos fechados\nou 1,5 s de bocejo
+  }
+
+  state "Cabeça virada" as CABECA <<grupo>> {
+    state "Contando o tempo" as CONTA_DISTRACAO
+    state "Distraído" as DISTRAIDO : registra um evento\nde distração com foto
+    [*] --> CONTA_DISTRACAO
+    CONTA_DISTRACAO -down-> DISTRAIDO : mais de 2 s
+  }
+
+  [*] --> ATENTO
+  ATENTO -down-> OLHOS : fechou os olhos\nou bocejou
+  OLHOS -up-> ATENTO : abriu os olhos
+  ATENTO -down-> CABECA : virou a cabeça
+  CABECA -up-> ATENTO : olhou para a frente
+}
+
+[*] --> SEM_ROSTO
+SEM_ROSTO -down-> OBSERVANDO : rosto encontrado
+OBSERVANDO -up-> SEM_ROSTO : rosto sumiu\nda imagem
+
+note bottom of OBSERVANDO
+  Piscadas e interrupções muito curtas (menos de 0,15 segundo) não zeram a contagem.
+  Cada tipo de evento é registrado no máximo uma vez a cada 5 segundos.
+  Tempos iniciais, a ajustar nos testes.
+end note
+
+@enduml

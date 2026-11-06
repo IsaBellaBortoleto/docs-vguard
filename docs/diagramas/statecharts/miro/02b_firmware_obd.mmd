@@ -1,0 +1,24 @@
+stateDiagram-v2
+    state "Aguardando a Raspberry Pi" as AGUARDA
+    state "Conversando com o carro" as ATIVO
+    state "Bloqueado até ser religado" as BLOQUEADO
+    [*] --> AGUARDA
+    AGUARDA --> ATIVO : a Raspberry Pi está conectada
+    ATIVO --> AGUARDA : a Raspberry Pi sumiu por 3 segundos
+    ATIVO --> BLOQUEADO : 3ª falha na rede, ou tentou enviar algo proibido
+
+    state ATIVO {
+        state "Escutando o carro por 1 segundo" as ESCUTANDO
+        state "Rede incompatível, sem transmitir" as REDE
+        state "Lendo velocidade, rotação e temperatura" as LENDO
+        state "Carro sem resposta" as SEM_RESPOSTA
+        state "Falha na rede, conta a falha" as FALHA
+        [*] --> ESCUTANDO
+        ESCUTANDO --> REDE : rede diferente do esperado
+        REDE --> ESCUTANDO : depois de 10 segundos
+        ESCUTANDO --> LENDO : tudo normal
+        LENDO --> SEM_RESPOSTA : 2 segundos sem resposta
+        SEM_RESPOSTA --> ESCUTANDO : tenta de novo em alguns segundos
+        LENDO --> FALHA : erro ao perguntar
+        FALHA --> ESCUTANDO : depois de 10 segundos
+    }

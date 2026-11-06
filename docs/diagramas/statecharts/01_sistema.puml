@@ -1,0 +1,82 @@
+@startuml 01_sistema
+skinparam defaultFontName "Segoe UI"
+skinparam shadowing false
+skinparam linetype polyline
+skinparam nodesep 70
+skinparam ranksep 70
+skinparam roundCorner 12
+skinparam ArrowColor #5E548E
+skinparam ArrowThickness 1.3
+skinparam ArrowFontColor #3D3558
+skinparam ArrowFontSize 12
+skinparam TitleFontColor #4527A0
+skinparam state {
+  BackgroundColor #EDE7F6
+  BorderColor #7E57C2
+  BorderThickness 1.3
+  FontColor #311B92
+  FontSize 13
+  FontStyle bold
+  AttributeFontColor #4A4458
+  AttributeFontSize 12
+  StartColor #4527A0
+  EndColor #4527A0
+}
+skinparam state<<grupo>> {
+  BackgroundColor #F8F5FC
+  BorderColor #B39DDB
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #B39DDB
+  FontColor #4A4458
+}
+hide empty description
+
+title <size:22><b>Visão geral do V-GUARD</b></size>\n<size:13><color:#7A6F99>Estados do sistema, do carro desligado ao funcionamento</color></size>
+
+state "Desligado" as DESLIGADO
+state "Ligado" as LIGADO <<grupo>> {
+  state "Preparando" as PREPARANDO : recupera o que já\nestava salvo no cartão
+  state "Funcionando" as FUNCIONANDO <<grupo>> {
+    state "Dados do carro" as CARRO <<grupo>> {
+      state "Lendo os dados do carro" as LENDO : velocidade, rotação do motor,\nposição e movimento
+      state "Sem dados do carro" as SEM_DADOS
+      [*] --> LENDO
+      LENDO -down-> SEM_DADOS : o carro parou\nde responder
+      SEM_DADOS -up-> LENDO : o carro voltou\na responder
+    }
+    ||
+    state "Motorista" as MOTORISTA <<grupo>> {
+      state "Observando o motorista" as OBSERVANDO
+      [*] --> OBSERVANDO
+      OBSERVANDO --> OBSERVANDO : sono ou distração\n/ registra com foto
+    }
+    ||
+    state "Envio dos dados" as ENVIO <<grupo>> {
+      state "Sem internet" as OFFLINE : guarda tudo no cartão
+      state "Enviando pelo 4G" as G4 : envia os dados,\nmas não as fotos
+      state "Enviando pelo Wi-Fi" as WIFI : envia tudo,\ninclusive as fotos
+      [*] --> OFFLINE
+      OFFLINE -down-> G4 : sinal de celular
+      OFFLINE -down-> WIFI : Wi-Fi conhecido
+      G4 -right-> WIFI : Wi-Fi conhecido\n(tem preferência)
+      WIFI -left-> G4 : Wi-Fi caiu
+      G4 -up-> OFFLINE : sinal caiu
+      WIFI -up-> OFFLINE : sem Wi-Fi\ne sem sinal
+    }
+  }
+  [*] --> PREPARANDO
+  PREPARANDO --> FUNCIONANDO : pronto
+}
+
+[*] --> DESLIGADO
+DESLIGADO -down-> LIGADO : o motorista liga o carro
+LIGADO -up-> DESLIGADO : carro desligado\nou falta energia
+
+note bottom of LIGADO
+  As três partes de "Funcionando" acontecem ao mesmo tempo.
+  Se faltar energia, nada do que já foi salvo no cartão se perde.
+end note
+
+@enduml

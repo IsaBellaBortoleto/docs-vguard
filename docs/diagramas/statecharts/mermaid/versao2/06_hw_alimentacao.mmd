@@ -1,0 +1,87 @@
+---
+title: Alimentação do V-GUARD
+config:
+  state:
+    wrappingWidth: 600
+    nodeSpacing: 25
+    rankSpacing: 30
+  flowchart:
+    curve: step
+    wrappingWidth: 600
+  look: neo
+  theme: base
+  themeVariables:
+    fontFamily: "Segoe UI"
+    fontSize: 14px
+    primaryColor: "#E9C46A"
+    stateBkg: "#E9C46A"
+    primaryBorderColor: "#264653"
+    primaryTextColor: "#1F1F1F"
+    stateLabelColor: "#1F1F1F"
+    textColor: "#4D4D4D"
+    titleColor: "#1F1F1F"
+    lineColor: "#264653"
+    transitionColor: "#264653"
+    transitionLabelColor: "#4D4D4D"
+    edgeLabelBackground: "#FFFFFF"
+    compositeBackground: "#FFFFFF"
+    compositeTitleBackground: "#2A9D8F"
+    compositeBorder: "#264653"
+    altBackground: "#FFFFFF"
+    mainBkg: "#9FD4CD"
+    useGradient: false
+    specialStateColor: "#E76F51"
+    innerEndBackground: "#E76F51"
+    noteBkgColor: "#FFFFFF"
+    noteBorderColor: "#F4A261"
+    noteTextColor: "#4D4D4D"
+---
+stateDiagram-v2
+    state "12 V do carro" as V12
+    V12 : acendedor ou pino 16 da tomada OBD-II
+
+    state "Proteção e conversão" as CONVERSAO
+    state CONVERSAO {
+        state "Fusível" as FUS
+        FUS : protege contra curto-circuito
+        state "Carregador USB veicular 54 W" as CARREG
+        CARREG : 12 V para 5 V, saída USB-C
+        state "Conversor LM2596" as LM
+        LM : 12 V para 5 V, ramo só do 4G
+        state "Capacitor reservatório" as CAP
+        CAP : segura os picos de corrente do 4G
+        FUS --> CARREG : 12 V protegido
+        FUS --> LM : 12 V protegido
+        LM --> CAP : 5 V
+    }
+
+    state "Consumidores" as CARGAS
+    state CARGAS {
+        state "Raspberry Pi 4" as PI
+        PI : até 3 A
+        state "Módulo 4G A7670E" as LTE
+        LTE : picos de corrente ao transmitir
+        state "ESP32" as ESP
+        ESP : uma fonte só por vez
+        state "Câmera OV5647 e LEDs IR" as CAM
+        state "Receptor GNSS" as GNSS
+        state "IMU" as IMU
+        state "Transceptor CAN TJA1050" as CANT
+        CANT : funciona só entre 4,75 V e 5,25 V
+        PI --> ESP : 5 V pelo pino 2 ou 4, fusível rearmável de 0,5 A
+        PI --> CAM : pela fita CSI
+        PI --> GNSS : 3,3 V
+        ESP --> IMU : 3,3 V
+        ESP --> CANT : 5 V pelo pino VIN
+    }
+
+    V12 --> FUS : 12 V
+    CARREG --> PI : 5 V pelo USB-C
+    CAP --> LTE : 5 V
+
+    note right of CARGAS
+        O 4G puxa picos de corrente ao transmitir: o ramo próprio e o capacitor
+        evitam que a Raspberry Pi reinicie por queda de tensão.
+        Terra comum entre carro, Raspberry Pi e ESP32 (a UART e o CAN dependem disso).
+        Na bancada, com o ESP32 no USB do notebook, o fio de 5 V da Pi fica desligado.
+    end note

@@ -1,0 +1,46 @@
+stateDiagram-v2
+    state "Desligado" as DESLIGADO
+    state "Ligado" as LIGADO
+
+    [*] --> DESLIGADO
+    DESLIGADO --> LIGADO : o motorista liga o carro
+    LIGADO --> DESLIGADO : carro desligado ou falta energia
+
+    state LIGADO {
+        state "Preparando" as PREPARANDO
+        state "Funcionando" as FUNCIONANDO
+        [*] --> PREPARANDO
+        PREPARANDO --> FUNCIONANDO : recuperou o que estava salvo
+
+        state FUNCIONANDO {
+            state "Dados do carro" as CARRO
+            state CARRO {
+                state "Lendo os dados do carro" as LENDO
+                state "Sem dados do carro" as SEM_DADOS
+                [*] --> LENDO
+                LENDO --> SEM_DADOS : o carro parou de responder
+                SEM_DADOS --> LENDO : o carro voltou a responder
+            }
+            --
+            state "Motorista" as MOTORISTA
+            state MOTORISTA {
+                state "Observando o motorista" as OBSERVANDO
+                [*] --> OBSERVANDO
+                OBSERVANDO --> OBSERVANDO : sono ou distração / registra com foto
+            }
+            --
+            state "Envio dos dados" as ENVIO
+            state ENVIO {
+                state "Sem internet, guarda no cartão" as OFFLINE
+                state "4G, envia tudo" as G4
+                state "Wi-Fi, envia tudo" as WIFI
+                [*] --> OFFLINE
+                OFFLINE --> G4 : sinal de celular
+                OFFLINE --> WIFI : Wi-Fi conhecido
+                G4 --> WIFI : Wi-Fi conhecido (tem preferência)
+                WIFI --> G4 : Wi-Fi caiu
+                G4 --> OFFLINE : sinal caiu
+                WIFI --> OFFLINE : sem Wi-Fi e sem sinal
+            }
+        }
+    }

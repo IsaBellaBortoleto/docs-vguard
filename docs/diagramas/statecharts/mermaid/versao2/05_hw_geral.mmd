@@ -1,0 +1,95 @@
+---
+title: Diagrama de blocos do hardware do V-GUARD
+config:
+  state:
+    wrappingWidth: 600
+    nodeSpacing: 25
+    rankSpacing: 30
+  flowchart:
+    curve: step
+    wrappingWidth: 600
+  look: neo
+  theme: base
+  themeVariables:
+    fontFamily: "Segoe UI"
+    fontSize: 14px
+    primaryColor: "#E9C46A"
+    stateBkg: "#E9C46A"
+    primaryBorderColor: "#264653"
+    primaryTextColor: "#1F1F1F"
+    stateLabelColor: "#1F1F1F"
+    textColor: "#4D4D4D"
+    titleColor: "#1F1F1F"
+    lineColor: "#264653"
+    transitionColor: "#264653"
+    transitionLabelColor: "#4D4D4D"
+    edgeLabelBackground: "#FFFFFF"
+    compositeBackground: "#FFFFFF"
+    compositeTitleBackground: "#2A9D8F"
+    compositeBorder: "#264653"
+    altBackground: "#FFFFFF"
+    mainBkg: "#9FD4CD"
+    useGradient: false
+    specialStateColor: "#E76F51"
+    innerEndBackground: "#E76F51"
+    noteBkgColor: "#FFFFFF"
+    noteBorderColor: "#F4A261"
+    noteTextColor: "#4D4D4D"
+---
+stateDiagram-v2
+    direction LR
+    state "No carro" as CARRO
+    state CARRO {
+        state "12 V do carro" as V12
+        V12 : acendedor ou pino 16 da tomada OBD-II
+        state "Tomada OBD-II" as OBD
+        OBD : rede CAN do carro, 500 kbit/s
+    }
+
+    state "Gabinete do V-GUARD" as GABINETE
+    state GABINETE {
+        state "Alimentação" as ALIM
+        ALIM : fusível, carregador USB 54 W e conversor LM2596
+        state "Raspberry Pi 4" as PI
+        PI : visão, eventos e envio, com Wi-Fi integrado
+        state "Cartão microSD 128 GB" as SD
+        SD : banco de dados e fotos
+        state "ESP32" as ESP
+        ESP : aquisição dos dados do carro
+        state "IMU 6 eixos" as IMU
+        IMU : aceleração e rotação
+        state "Transceptor CAN TJA1050" as CANT
+        CANT : liga o ESP32 à rede do carro
+        state "Receptor GNSS" as GNSS
+        GNSS : posição, hora e pulso PPS
+        state "Módulo 4G A7670E" as LTE
+        LTE : internet pela rede celular, com chip de dados
+    }
+
+    state "Fora do gabinete" as FORA
+    state FORA {
+        state "Câmera OV5647" as CAM
+        CAM : visão noturna com LEDs IR, voltada ao motorista
+        state "Antena GNSS" as ANT_GNSS
+        state "Antena 4G" as ANT_LTE
+    }
+
+    V12 --> ALIM : 12 V
+    ALIM --> PI : 5 V pelo USB-C
+    ALIM --> LTE : 5 V, ramo próprio
+    PI --> ESP : 5 V com fusível de 0,5 A, e UART
+    ESP --> PI : leituras pela UART, 460800 bps
+    CAM --> PI : fita CSI
+    GNSS --> PI : UART e PPS
+    PI --> LTE : USB
+    PI --> SD : slot do cartão
+    IMU --> ESP : I²C
+    ESP --> CANT : TX, RX e modo silencioso
+    CANT --> OBD : CAN-H no pino 6, CAN-L no pino 14
+    ANT_GNSS --> GNSS
+    ANT_LTE --> LTE
+
+    note right of GABINETE
+        A Raspberry Pi processa e guarda; o ESP32 cuida só do carro.
+        O ESP32 só pergunta ao carro; nunca envia comandos para ele.
+    end note

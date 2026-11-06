@@ -1,0 +1,16 @@
+Lista de componentes
+
+1. Cabo adaptador OBD2 macho/fêmea de 30 cm — 1 unidade
+2. Câmera de visão noturna para Raspberry Pi, 5 MP, OV5647, com 2 LEDs infravermelhos — opção 4 — 1 unidade
+3. Módulo A7670E LTE Cat 1, GSM/GPRS, LBS, com antena LTE/GNSS — 1 unidade
+4. Conversor DC-DC step-down LM2596 com display LED — 2 unidades
+5. Carregador veicular USB Essager 54 W, USB-A/USB-C — 1 unidade
+6. Módulo leitor de cartão microSD para Arduino/ESP32, 3,3 V, SPI/TF — kit com 3 unidades
+7. Módulo CAN bus MCP2515 com controlador MCP2515 e transceptor TJA1050, SPI — 1 unidade
+8. Cabo adaptador OBD2 macho/fêmea de 30 cm — 1 unidade
+9. Cabo adaptador OBD2 macho/fêmea de 30 cm — 1 unidade
+
+Observações:
+- Os cabos OBD2 aparecem em três pedidos/listagens: um macho, um fêmea e outro cuja variante exibida é macho. Confirme se todos serão usados; podem ser duplicados.
+- O módulo A7670E foi ajustado para a versão que funciona no Brasil; confirme compatibilidade das bandas LTE com as operadoras brasileiras.
+

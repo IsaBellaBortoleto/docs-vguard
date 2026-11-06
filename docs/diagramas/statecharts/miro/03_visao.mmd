@@ -1,0 +1,33 @@
+stateDiagram-v2
+    state "Rosto fora da imagem" as SEM_ROSTO
+    state "Observando o rosto" as OBSERVANDO
+
+    [*] --> SEM_ROSTO
+    SEM_ROSTO --> OBSERVANDO : rosto encontrado
+    OBSERVANDO --> SEM_ROSTO : rosto sumiu da imagem
+
+    state OBSERVANDO {
+        state "Atento" as ATENTO
+        state "Olhos fechados ou bocejo" as OLHOS
+        state "Cabeça virada" as CABECA
+
+        [*] --> ATENTO
+        ATENTO --> OLHOS : fechou os olhos ou bocejou
+        OLHOS --> ATENTO : abriu os olhos
+        ATENTO --> CABECA : virou a cabeça
+        CABECA --> ATENTO : olhou para a frente
+
+        state OLHOS {
+            state "Contando o tempo" as CONTA_SONO
+            state "Sonolento, registra evento com foto" as SONO
+            [*] --> CONTA_SONO
+            CONTA_SONO --> SONO : 1 s de olhos fechados ou 1,5 s de bocejo
+        }
+
+        state CABECA {
+            state "Contando o tempo" as CONTA_DISTRACAO
+            state "Distraído, registra evento com foto" as DISTRAIDO
+            [*] --> CONTA_DISTRACAO
+            CONTA_DISTRACAO --> DISTRAIDO : mais de 2 s
+        }
+    }

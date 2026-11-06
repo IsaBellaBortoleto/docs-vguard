@@ -1,0 +1,85 @@
+---
+title: Aquisição dos dados do carro (ESP32)
+config:
+  state:
+    wrappingWidth: 600
+    nodeSpacing: 25
+    rankSpacing: 30
+  flowchart:
+    curve: step
+    wrappingWidth: 600
+  look: neo
+  theme: base
+  themeVariables:
+    fontFamily: "Segoe UI"
+    fontSize: 14px
+    primaryColor: "#E9C46A"
+    stateBkg: "#E9C46A"
+    primaryBorderColor: "#264653"
+    primaryTextColor: "#1F1F1F"
+    stateLabelColor: "#1F1F1F"
+    textColor: "#4D4D4D"
+    titleColor: "#1F1F1F"
+    lineColor: "#264653"
+    transitionColor: "#264653"
+    transitionLabelColor: "#4D4D4D"
+    edgeLabelBackground: "#FFFFFF"
+    compositeBackground: "#FFFFFF"
+    compositeTitleBackground: "#2A9D8F"
+    compositeBorder: "#264653"
+    altBackground: "#FFFFFF"
+    mainBkg: "#9FD4CD"
+    useGradient: false
+    specialStateColor: "#E76F51"
+    innerEndBackground: "#E76F51"
+    noteBkgColor: "#FFFFFF"
+    noteBorderColor: "#F4A261"
+    noteTextColor: "#4D4D4D"
+---
+stateDiagram-v2
+    state "IMU 6 eixos" as IMU
+    IMU : freadas, curvas e batidas, 100 leituras por segundo
+
+    state "ESP32" as ESP
+    state ESP {
+        state "I²C" as I2C
+        I2C : GPIO21 (SDA) e GPIO22 (SCL)
+        state "Processador com FreeRTOS" as CPU
+        CPU : junta e empacota as leituras
+        state "Controlador CAN integrado (TWAI)" as TWAI
+        TWAI : GPIO25 (TX) e GPIO26 (RX)
+        state "Trava do transceptor" as TRAVA
+        TRAVA : GPIO27
+        state "UART2" as UART
+        UART : GPIO17 (TX) e GPIO16 (RX)
+        state "Watchdog" as WDT
+        WDT : reinicia o ESP32 se uma tarefa travar por 3 s
+        I2C --> CPU
+        CPU --> TWAI : perguntas OBD-II
+        TWAI --> CPU : respostas do carro
+        CPU --> TRAVA : libera só para perguntar
+        CPU --> UART : IMU 25 vezes/s e OBD 5 vezes/s
+        WDT --> CPU
+    }
+
+    state "Transceptor CAN TJA1050" as CANT
+    CANT : do módulo MCP2515, com o MCP2515 retirado
+    state "Tomada OBD-II" as OBD
+    OBD : velocidade, rotação, temperatura e outros
+    state "Raspberry Pi 4" as PI
+    PI : UART5 (/dev/ttyAMA5), 460800 bps
+
+    IMU --> I2C : SDA e SCL, 3,3 V
+    TWAI --> CANT : TXD
+    CANT --> TWAI : RXD, por divisor 10 kΩ e 20 kΩ
+    TRAVA --> CANT : pino S, com 10 kΩ para 3,3 V
+    CANT --> OBD : CAN-H (pino 6), CAN-L (pino 14), terra (pinos 4 e 5)
+    UART --> PI : GPIO17 para o pino 33, por 1 kΩ
+    PI --> UART : pino 32 para o GPIO16, por 1 kΩ (PING e taxas)
+
+    note right of ESP
+        Com o pino S em 3,3 V, o transceptor fica mudo: nada sai para o carro
+        até o firmware liberar, mesmo se o ESP32 reiniciar ou travar.
+        Na rede do carro, só perguntas de leitura (OBD-II, modo 01), nunca comandos.
+        No carro, o jumper de 120 Ω do módulo sai: a rede do carro já tem terminação.
+    end note

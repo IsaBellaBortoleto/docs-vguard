@@ -1,0 +1,38 @@
+stateDiagram-v2
+    state "Ligando, sem enviar nada ao carro" as LIGANDO
+    state "Funcionando" as FUNCIONANDO
+
+    [*] --> LIGANDO
+    LIGANDO --> FUNCIONANDO : pronto
+    FUNCIONANDO --> LIGANDO : travou, reinicia sozinho
+
+    state FUNCIONANDO {
+        state "Conversa com a Raspberry Pi" as PI
+        state PI {
+            state "Esperando a Raspberry Pi" as SEM_PI
+            state "Raspberry Pi conectada" as COM_PI
+            [*] --> SEM_PI
+            SEM_PI --> COM_PI : a Raspberry Pi chamou
+            COM_PI --> SEM_PI : 3 segundos sem notícias
+        }
+        --
+        state "Dados do motor (OBD-II)" as OBD
+        state OBD {
+            state "Aguardando a Raspberry Pi" as AGUARDA
+            state "Conversando com o carro (diagrama 2b)" as ATIVO
+            state "Bloqueado até ser religado" as BLOQUEADO
+            [*] --> AGUARDA
+            AGUARDA --> ATIVO : a Raspberry Pi está conectada
+            ATIVO --> AGUARDA : a Raspberry Pi sumiu por 3 segundos
+            ATIVO --> BLOQUEADO : 3ª falha na rede, ou tentou enviar algo proibido
+        }
+        --
+        state "Sensor de movimento (IMU)" as IMU
+        state IMU {
+            state "Medindo freadas, curvas e batidas" as MEDINDO
+            state "Com defeito, tenta religar" as DEFEITO
+            [*] --> MEDINDO
+            MEDINDO --> DEFEITO : o sensor parou de responder
+            DEFEITO --> MEDINDO : o sensor voltou
+        }
+    }

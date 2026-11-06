@@ -1,0 +1,100 @@
+@startuml 02_firmware_esp32
+skinparam defaultFontName "Segoe UI"
+skinparam shadowing false
+skinparam linetype polyline
+skinparam nodesep 70
+skinparam ranksep 70
+skinparam roundCorner 12
+skinparam ArrowColor #5E548E
+skinparam ArrowThickness 1.3
+skinparam ArrowFontColor #3D3558
+skinparam ArrowFontSize 12
+skinparam TitleFontColor #4527A0
+skinparam state {
+  BackgroundColor #EDE7F6
+  BorderColor #7E57C2
+  BorderThickness 1.3
+  FontColor #311B92
+  FontSize 13
+  FontStyle bold
+  AttributeFontColor #4A4458
+  AttributeFontSize 12
+  StartColor #4527A0
+  EndColor #4527A0
+}
+skinparam state<<grupo>> {
+  BackgroundColor #F8F5FC
+  BorderColor #B39DDB
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #B39DDB
+  FontColor #4A4458
+}
+hide empty description
+
+title <size:22><b>Leitura dos dados do carro</b></size>\n<size:13><color:#7A6F99>ESP32: tomada OBD-II e sensor de movimento</color></size>
+
+state "Ligando" as LIGANDO : primeiro garante que não\nvai enviar nada ao carro
+state "Funcionando" as FUNCIONANDO <<grupo>> {
+
+  state "Conversa com a Raspberry Pi" as PI <<grupo>> {
+    state "Esperando a Raspberry Pi" as SEM_PI : descarta o que lê
+    state "Raspberry Pi conectada" as COM_PI : envia as leituras
+    [*] --> SEM_PI
+    SEM_PI -down-> COM_PI : a Raspberry Pi\nchamou
+    COM_PI -up-> SEM_PI : 3 segundos\nsem notícias
+  }
+
+  ||
+
+  state "Dados do motor (OBD-II)" as OBD <<grupo>> {
+    state "Aguardando a Raspberry Pi" as AGUARDA : não fala com o carro
+    state "Bloqueado" as BLOQUEADO : não fala mais com o carro\naté ser religado
+
+    state "Conversando com o carro" as ATIVO <<grupo>> {
+      state "Escutando o carro" as ESCUTANDO : só ouve, por 1 segundo
+      state "Rede incompatível" as REDE : velocidade diferente ou fio\nem curto, sem transmitir nada
+      state "Lendo o carro" as LENDO : pergunta velocidade, rotação\ne temperatura várias vezes\npor segundo
+      state "Carro sem resposta" as SEM_RESPOSTA : provavelmente desligado
+      state "Falha na rede" as FALHA : volta a só ouvir\ne conta a falha
+      [*] --> ESCUTANDO
+      ESCUTANDO -left-> REDE : rede diferente\ndo esperado
+      REDE --> ESCUTANDO : depois de\n10 segundos
+      ESCUTANDO -down-> LENDO : tudo normal
+      LENDO -down-> SEM_RESPOSTA : 2 segundos\nsem resposta
+      SEM_RESPOSTA --> ESCUTANDO : tenta de novo\nem alguns segundos
+      LENDO -down-> FALHA : erro ao\nperguntar
+      FALHA --> ESCUTANDO : depois de\n10 segundos
+    }
+
+    [*] --> AGUARDA
+    AGUARDA -down-> ATIVO : a Raspberry Pi\nestá conectada
+    ATIVO -up-> AGUARDA : a Raspberry Pi\nsumiu por 3 segundos
+    ATIVO -down-> BLOQUEADO : 3ª falha na rede, ou\ntentou enviar algo proibido
+  }
+
+  ||
+
+  state "Sensor de movimento (IMU)" as IMU <<grupo>> {
+    state "Medindo" as MEDINDO : freadas, curvas e batidas,\n100 vezes por segundo
+    state "Com defeito" as DEFEITO : tenta religar o sensor\na cada segundo
+    [*] --> MEDINDO
+    MEDINDO -down-> DEFEITO : o sensor parou\nde responder
+    DEFEITO -up-> MEDINDO : o sensor\nvoltou
+  }
+}
+
+[*] --> LIGANDO
+LIGANDO -down-> FUNCIONANDO : pronto
+FUNCIONANDO -up-> LIGANDO : travou\n(reinicia sozinho)
+
+note bottom of FUNCIONANDO
+  As três partes funcionam ao mesmo tempo e de forma independente:
+  um defeito no sensor de movimento não interrompe a leitura do motor.
+  O ESP32 só pergunta ao carro; nunca envia comandos para ele.
+  Só a falha ao perguntar conta para o bloqueio, pois com a rede incompatível ele nem transmite.
+  O OBD mostra o comportamento projetado: no firmware, ele ainda está sendo programado.
+end note
+
+@enduml
