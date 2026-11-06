@@ -37,49 +37,46 @@ config:
     noteTextColor: "#4D4D4D"
 ---
 stateDiagram-v2
-    state "IMU 6 eixos" as IMU
-    IMU : freadas, curvas e batidas, 100 leituras por segundo
+    state "IMU 6 eixos (ADXL345)" as IMU
+    IMU : acelerômetro I²C (freadas, curvas e batidas)
 
     state "ESP32" as ESP
     state ESP {
         state "I²C" as I2C
-        I2C : GPIO21 (SDA) e GPIO22 (SCL)
+        I2C : GPIO21 (SDA, pino 20) e GPIO22 (SCL, pino 17)
         state "Processador com FreeRTOS" as CPU
         CPU : junta e empacota as leituras
-        state "Controlador CAN integrado (TWAI)" as TWAI
-        TWAI : GPIO25 (TX) e GPIO26 (RX)
-        state "Trava do transceptor" as TRAVA
-        TRAVA : GPIO27
-        state "UART2" as UART
-        UART : GPIO17 (TX) e GPIO16 (RX)
+        state "Barramento SPI (CAN)" as SPI
+        SPI : GPIO25 (CS), GPIO23 (MOSI/SI), GPIO19 (MISO/SO), GPIO18 (SCK)
+        state "Porta USB (Serial CDC)" as USB_ESP
+        USB_ESP : conector USB (dados seriais, 5 V e GND integrados)
         state "Watchdog" as WDT
         WDT : reinicia o ESP32 se uma tarefa travar por 3 s
         I2C --> CPU
-        CPU --> TWAI : perguntas OBD-II
-        TWAI --> CPU : respostas do carro
-        CPU --> TRAVA : libera só para perguntar
-        CPU --> UART : IMU 25 vezes/s e OBD 5 vezes/s
+        CPU --> SPI : perguntas OBD-II via MCP2515
+        SPI --> CPU : respostas CAN do veículo
+        CPU --> USB_ESP : IMU 25 vezes/s e OBD 5 vezes/s
         WDT --> CPU
     }
 
-    state "Transceptor CAN TJA1050" as CANT
-    CANT : do módulo MCP2515, com o MCP2515 retirado
+    state "Módulo CAN MCP2515" as CANT
+    CANT : controlador MCP2515 e transceptor TJA1050
     state "Tomada OBD-II" as OBD
-    OBD : velocidade, rotação, temperatura e outros
+    OBD : rede CAN do carro (500 kbit/s, pinos 6 e 14)
     state "Raspberry Pi 4" as PI
-    PI : UART5 (/dev/ttyAMA5), 460800 bps
+    PI : porta USB (porta USB2.0_0, /dev/ttyUSB0 ou similar)
 
-    IMU --> I2C : SDA e SCL, 3,3 V
-    TWAI --> CANT : TXD
-    CANT --> TWAI : RXD, por divisor 10 kΩ e 20 kΩ
-    TRAVA --> CANT : pino S, com 10 kΩ para 3,3 V
-    CANT --> OBD : CAN-H (pino 6), CAN-L (pino 14), terra (pinos 4 e 5)
-    UART --> PI : GPIO17 para o pino 33, por 1 kΩ
-    PI --> UART : pino 32 para o GPIO16, por 1 kΩ (PING e taxas)
+    IMU --> I2C : SDA (pino 7 para GPIO21) e SCL (pino 8 para GPIO22)
+    ESP --> IMU : 3V3 (pino 30 no CS) e GND (pino 14 no GND e SDO)
+    SPI --> CANT : CS (pino 5), SI (pino 3), SCK (pino 2)
+    CANT --> SPI : SO (pino 4 para GPIO19)
+    ESP --> CANT : GND (pino 14 para pino 6) e 5V (pino 15 VIN para pino 7 VCC)
+    CANT --> OBD : CAN-H (pino 8 para pino 6) e CAN-L (pino 9 para pino 14)
+    USB_ESP --> PI : Cabo USB (dados, alimentação 5 V e GND integrado - sem fusível e sem UART)
+    PI --> USB_ESP : Comandos e sincronismo via USB serial
 
     note right of ESP
-        Com o pino S em 3,3 V, o transceptor fica mudo: nada sai para o carro
-        até o firmware liberar, mesmo se o ESP32 reiniciar ou travar.
-        Na rede do carro, só perguntas de leitura (OBD-II, modo 01), nunca comandos.
-        No carro, o jumper de 120 Ω do módulo sai: a rede do carro já tem terminação.
+        O cabo USB já realiza as conexões de GND comum e alimentação 5 V entre Pi e ESP32.
+        Não são usados fusíveis na linha nem pinos GPIO para UART.
+        Todas as portas e pinos de interligação correspondem ao esquemático do circuito.
     end note

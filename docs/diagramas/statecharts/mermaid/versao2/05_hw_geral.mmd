@@ -49,17 +49,17 @@ stateDiagram-v2
     state "Gabinete do V-GUARD" as GABINETE
     state GABINETE {
         state "Alimentação" as ALIM
-        ALIM : fusível, carregador USB 54 W e conversor LM2596
+        ALIM : carregador USB 54 W e conversor LM2596 (sem fusível externo na linha Pi-ESP32)
         state "Raspberry Pi 4" as PI
         PI : visão, eventos e envio, com Wi-Fi integrado
         state "Cartão microSD 128 GB" as SD
-        SD : banco de dados e fotos
+        SD : banco de dados e fotos (slot interno Pi)
         state "ESP32" as ESP
         ESP : aquisição dos dados do carro
-        state "IMU 6 eixos" as IMU
-        IMU : aceleração e rotação
-        state "Transceptor CAN TJA1050" as CANT
-        CANT : liga o ESP32 à rede do carro
+        state "IMU 6 eixos (ADXL345)" as IMU
+        IMU : aceleração e dinâmica veicular
+        state "Módulo CAN (MCP2515 + TJA1050)" as CANT
+        CANT : interface SPI com transceptor para rede CAN
         state "Receptor GNSS" as GNSS
         GNSS : posição, hora e pulso PPS
         state "Módulo 4G A7670E" as LTE
@@ -77,19 +77,20 @@ stateDiagram-v2
     V12 --> ALIM : 12 V
     ALIM --> PI : 5 V pelo USB-C
     ALIM --> LTE : 5 V, ramo próprio
-    PI --> ESP : 5 V com fusível de 0,5 A, e UART
-    ESP --> PI : leituras pela UART, 460800 bps
-    CAM --> PI : fita CSI
+    PI --> ESP : Cabo USB (dados, 5 V e GND comum - sem fusível e sem UART)
+    ESP --> PI : Leituras e telemetria via USB serial
+    CAM --> PI : Cabo flat CSI
     GNSS --> PI : UART e PPS
-    PI --> LTE : USB
-    PI --> SD : slot do cartão
-    IMU --> ESP : I²C
-    ESP --> CANT : TX, RX e modo silencioso
-    CANT --> OBD : CAN-H no pino 6, CAN-L no pino 14
+    PI --> LTE : Cabo USB (porta USB2.0_1)
+    PI --> SD : Slot do cartão microSD
+    IMU --> ESP : I²C (GPIO21 SDA, GPIO22 SCL, 3V3 no CS e GND)
+    ESP --> CANT : SPI (GPIO25 CS, GPIO23 SI, GPIO19 SO, GPIO18 SCK, GND pino 14)
+    CANT --> OBD : CAN-H (pino 8 para pino 6) e CAN-L (pino 9 para pino 14)
     ANT_GNSS --> GNSS
     ANT_LTE --> LTE
 
     note right of GABINETE
-        A Raspberry Pi processa e guarda; o ESP32 cuida só do carro.
-        O ESP32 só pergunta ao carro; nunca envia comandos para ele.
+        A Raspberry Pi conecta ao ESP32 diretamente por cabo USB, que já realiza
+        as conexões de GND, provê alimentação 5 V e canal de dados (sem fusíveis e sem UART por GPIO).
+        O módulo CAN conecta ao ESP32 via SPI com pinos definidos no esquemático.
     end note

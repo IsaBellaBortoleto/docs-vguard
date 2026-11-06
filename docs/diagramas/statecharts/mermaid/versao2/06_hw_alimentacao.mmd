@@ -66,13 +66,13 @@ stateDiagram-v2
         state "Câmera OV5647 e LEDs IR" as CAM
         state "Receptor GNSS" as GNSS
         state "IMU" as IMU
-        state "Transceptor CAN TJA1050" as CANT
-        CANT : funciona só entre 4,75 V e 5,25 V
-        PI --> ESP : 5 V pelo pino 2 ou 4, fusível rearmável de 0,5 A
+        state "Módulo CAN MCP2515" as CANT
+        CANT : transceptor TJA1050 e controlador MCP2515
+        PI --> ESP : 5 V e GND via cabo USB (sem fusível e sem pinos GPIO)
         PI --> CAM : pela fita CSI
         PI --> GNSS : 3,3 V
         ESP --> IMU : 3,3 V
-        ESP --> CANT : 5 V pelo pino VIN
+        ESP --> CANT : 5 V (pino VIN/5V para pino 7 VCC) e GND (pino 14 para pino 6 GND)
     }
 
     V12 --> FUS : 12 V
@@ -82,6 +82,7 @@ stateDiagram-v2
     note right of CARGAS
         O 4G puxa picos de corrente ao transmitir: o ramo próprio e o capacitor
         evitam que a Raspberry Pi reinicie por queda de tensão.
-        Terra comum entre carro, Raspberry Pi e ESP32 (a UART e o CAN dependem disso).
-        Na bancada, com o ESP32 no USB do notebook, o fio de 5 V da Pi fica desligado.
+        O cabo USB entre Raspberry Pi e ESP32 já realiza a conexão do GND comum
+        e o fornecimento de 5 V, eliminando o uso de fusíveis e conexões UART por GPIO.
+        O módulo CAN tem seu GND e 5 V providos pelo ESP32.
     end note
